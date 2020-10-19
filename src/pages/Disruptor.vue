@@ -4,22 +4,21 @@
       :span="20"
       style="border: 1px solid; border-color: rgb(235, 237, 240)"
     >
-      <a-form :layout="form.layout" :model="form">
+      <a-form :layout="layout" :model="form">
         <a-row type="flex" justify="center" align="middle">
           <a-col :span="14">
             <a-form-item>
               <a-input
-                v-model:value="value"
+                v-model:value="form.url"
                 placeholder="?query string"
                 size="large"
-                @search="onSearch"
               >
                 <template v-slot:addonBefore>
-                  <a-select v-model:value="protocolMethod" style="width: 90px">
-                    <a-select-option value="GET"> GET </a-select-option>
-                    <a-select-option value="POST"> POST </a-select-option>
-                    <a-select-option value="PUT"> PUT </a-select-option>
-                    <a-select-option value="DELETE"> DELETE </a-select-option>
+                  <a-select v-model:value="form.method" style="width: 90px">
+                    <a-select-option value="get"> GET </a-select-option>
+                    <a-select-option value="post"> POST </a-select-option>
+                    <a-select-option value="put"> PUT </a-select-option>
+                    <a-select-option value="delete"> DELETE </a-select-option>
                   </a-select>
                 </template>
               </a-input>
@@ -37,7 +36,9 @@
             </a-form-item>
 
             <a-form-item>
-              <a-button type="primary" shape="round"> Fetch！ </a-button>
+              <a-button type="primary" shape="round" @click="disrupt">
+                Fetch！
+              </a-button>
             </a-form-item>
           </a-col>
         </a-row>
@@ -65,11 +66,10 @@ export default {
   components: {},
   data() {
     return {
-      protocolMethod: "GET",
+      layout: "horizontal",
       form: {
-        layout: "horizontal",
-        fieldA: "",
-        fieldB: "",
+        url: "/user",
+        method: "get"
       },
     };
   },
@@ -83,10 +83,12 @@ function{
   show data function
 }
 */
-  method: {
-    disrupt(target_API_config) {
+
+  methods: {
+    disrupt() {
       //pack axios request funtion
-      this.axios.request(target_API_config).then((response) => {
+      console.log(1);
+      this.$axios.request(this.form).then((response) => {
         const responseData = response;
         console.log(responseData);
       });

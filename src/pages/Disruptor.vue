@@ -29,11 +29,11 @@
             <a-form-item>
               <a-input> </a-input>
             </a-form-item>
-            <a-page-header title="Headers"></a-page-header>
+            <!-- <a-page-header title="Headers"></a-page-header>
             <a-divider />
             <a-form-item>
               <a-input> </a-input>
-            </a-form-item>
+            </a-form-item> -->
 
             <a-form-item>
               <a-button type="primary" shape="round" @click="disrupt">
@@ -46,15 +46,30 @@
     </a-col>
   </a-row>
 
-  <a-row type="flex" justify="center" align="middle">
+  <a-row type="flex" justify="center" align="top">
     <a-col :span="10">
       <a-card title="Response">
-        <div>returnData:{{ response_data }}</div>
+        <div v-if="showPage">
+          <pre>{{ response_data }}</pre>
+          <!-- <ul>
+            <li v-for="(value, name) in response_data" :key="value">
+              {{ name }}:{{ value }}
+            </li>
+          </ul> -->
+        </div>
       </a-card>
     </a-col>
     <a-col :span="10">
       <a-card title="Request">
-        <div>returnData:{{ request_data }}</div>
+        <div v-if="showPage">
+          <!-- <pre>{{ request_data }}</pre> -->
+
+          <ul>
+            <li v-for="(value, name) in request_data" :key="value">
+              {{ name }}:{{ value }}
+            </li>
+          </ul>
+        </div>
       </a-card>
     </a-col>
   </a-row>
@@ -66,9 +81,10 @@ export default {
   components: {},
   data() {
     return {
+      showPage: false,
       layout: "horizontal",
       form: {
-        url: "/user",
+        url: "https://jsonplaceholder.typicode.com/todos/1",
         method: "get",
       },
       response_data: "",
@@ -94,20 +110,30 @@ function{
       this.$axios
         .request(this.form)
         .then((response) => {
-          const responseData = response;
-          console.log(responseData);
+          this.response_data = JSON.stringify(response.data);
+          this.request_data = {
+            Method: response.config.method,
+			URL: response.config.url,
+			"Accept": response.config.headers["Accept"]
+          };
+          this.showPage = true;
+          console.log(this.request_data);
+          console.log(2);
         })
         .catch((err) => {
           console.log({ err });
-          this.response_data = err.response.headers;
-          this.request_data = [
-            err.response.config.method,
-            err.response.config.url,
-            err.response.headers["content-type"],
-          ];
-          console.log(this.response_data);
+          this.response_data = JSON.stringify(err.response.headers);
+          this.request_data = JSON.stringify({
+            Method: err.response.config.method,
+            URL: err.request.responseURL,
+            "Content-type": err.response.headers["content-type"],
+          });
+          console.log(err.response);
           console.log(this.request_data);
+          this.showPage = true;
+          console.log(3);
         });
+      console.log(4);
     },
   },
 };
@@ -118,13 +144,22 @@ function{
 h3 {
   margin: 40px 0 0;
 }
+pre {
+  text-align: left;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 2em;
+}
 ul {
   list-style-type: none;
+  text-align: left;
   padding: 0;
 }
 li {
-  display: inline-block;
-  margin: 0 10px;
+  /* display: inline-block; */
+  list-style-type: none;
+
+  margin: 0 px;
 }
 a {
   color: #42b983;

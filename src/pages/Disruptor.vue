@@ -49,12 +49,12 @@
   <a-row type="flex" justify="center" align="middle">
     <a-col :span="10">
       <a-card title="Response">
-        <div>Response data</div>
+        <div>returnData:{{ response_data }}</div>
       </a-card>
     </a-col>
     <a-col :span="10">
       <a-card title="Request">
-        <div>Request data</div>
+        <div>returnData:{{ request_data }}</div>
       </a-card>
     </a-col>
   </a-row>
@@ -69,8 +69,10 @@ export default {
       layout: "horizontal",
       form: {
         url: "/user",
-        method: "get"
+        method: "get",
       },
+      response_data: "",
+      request_data: "",
     };
   },
   /*
@@ -79,19 +81,33 @@ component{
   add button input delete button
 }
 function{
-  request function
-  show data function
+  request function 7/10done
+  print out header
 }
+
 */
 
   methods: {
-    disrupt() {
+    async disrupt() {
       //pack axios request funtion
       console.log(1);
-      this.$axios.request(this.form).then((response) => {
-        const responseData = response;
-        console.log(responseData);
-      });
+      this.$axios
+        .request(this.form)
+        .then((response) => {
+          const responseData = response;
+          console.log(responseData);
+        })
+        .catch((err) => {
+          console.log({ err });
+          this.response_data = err.response.headers;
+          this.request_data = [
+            err.response.config.method,
+            err.response.config.url,
+            err.response.headers["content-type"],
+          ];
+          console.log(this.response_data);
+          console.log(this.request_data);
+        });
     },
   },
 };

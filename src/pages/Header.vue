@@ -12,7 +12,5 @@ export default {
 </script>
 
 <style>
-.ant-page-header-heading-title{
-  color:white
-}
+
 </style>

@@ -12,6 +12,7 @@
                 v-model:value="form.url"
                 placeholder="?query string"
                 size="large"
+				style="margin: 2em 0 1em"
               >
                 <template v-slot:addonBefore>
                   <a-select v-model:value="form.method" style="width: 90px">

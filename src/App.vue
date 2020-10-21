@@ -1,19 +1,19 @@
 <template>
   <Header />
-  <Disruptor/>
+  <Disruptor />
 </template>
 
 <script>
-import Header from './pages/Header.vue'
-import Disruptor from './pages/Disruptor.vue'
+import Header from "./pages/Header.vue";
+import Disruptor from "./pages/Disruptor.vue";
 
 export default {
-  name: 'App',
+  name: "App",
   components: {
     Disruptor,
-    Header
-  }
-}
+    Header,
+  },
+};
 </script>
 
 <style>

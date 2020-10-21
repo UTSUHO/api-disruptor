@@ -6,7 +6,7 @@
     >
       <a-form :layout="layout" :model="form">
         <a-row type="flex" justify="center" align="middle">
-          <a-col :span="14">
+          <a-col :span="18">
             <a-form-item>
               <a-input
                 v-model:value="form.url"

@@ -79,18 +79,34 @@
   </a-row>
 
   <a-row type="flex" justify="center" align="top">
-    <a-col :span="10">
-      <a-card title="Response">
-        <div v-if="showPage">
+    <a-col :span="20">
+      <a-card
+        title="Response"
+        bodyStyle="overflow:auto;height:40vh"
+        v-if="cardName === 'Response' ? true : false"
+      >
+        <template v-slot:extra>
+          <a-button type="primary" shape="circle" @click="changeCard">
+            <template v-slot:icon><SyncOutlined /></template>
+          </a-button>
+        </template>
+        <div v-if="showPage" style="overflow: auto">
           <pre>{{ response_data }}</pre>
         </div>
       </a-card>
-    </a-col>
-    <a-col :span="10">
-      <a-card title="Request">
-        <div v-if="showPage">
-          <!-- <pre>{{ request_data }}</pre> -->
 
+      <a-card title="Request" v-if="cardName === 'Request' ? true : false">
+        <template v-slot:extra>
+          <a-button
+            type="primary"
+            shape="circle"
+            ghost="true"
+            @click="changeCard"
+          >
+            <template v-slot:icon><SyncOutlined /></template>
+          </a-button>
+        </template>
+        <div v-if="showPage">
           <ul>
             <li v-for="(value, name) in request_data" :key="value">
               {{ name }}:{{ value }}
@@ -105,14 +121,18 @@
 <script>
 //可视化组件
 // import inputList from "../components/inputList.vue";
+import { SyncOutlined } from "@ant-design/icons-vue";
+
 export default {
   name: "Disruptor",
   components: {
+    SyncOutlined,
     //   可视化组件
     // inputList,
   },
   data() {
     return {
+      cardName: "Response",
       inputParam: "",
       inputData: "",
       checkedData: [],
@@ -162,6 +182,13 @@ export default {
             Method: response.config.method,
             URL: response.config.url,
             Accept: response.config.headers["Accept"],
+            "Content-Type": response.config.headers["Content-Type"],
+            data: response.config.data,
+            maxBodyLength: response.config.maxBodyLength,
+            maxContentLength: response.config.maxContentLength,
+            timeout: response.config.timeout,
+            xsrfCookieName: response.config.xsrfCookieName,
+            xsrfHeaderName: response.config.xsrfHeaderName,
           };
           this.showPage = true;
           this.loading = false;
@@ -214,8 +241,18 @@ export default {
     //   }
     //   this.form.url += strBuffer;
     // },
+    changeCard() {
+      if (this.cardName === "Response") {
+        this.cardName = "Request";
+      } else {
+        this.cardName = "Response";
+      }
+    },
     formatInputParam() {
       var strBuffer = "";
+      if (this.formatInput(this.inputParam) === undefined) {
+        return;
+      }
       var objInput = this.formatInput(this.inputParam);
       //   add question mark
       if (this.form.url.includes("?")) {
@@ -231,17 +268,16 @@ export default {
       this.form.url = this.form.url.substring(0, this.form.url.length - 1);
     },
     formatInputData() {
-      this.form.data = this.formatInput(this.inputData);
+      if (this.formatInput(this.inputData) != undefined) {
+        this.form.data = this.formatInput(this.inputData);
+      }
     },
     formatInput(inputString) {
       // @return js object or null
       var objInput = {};
       var items;
       var bufferString = "";
-      console.log(inputString);
-
       inputString = inputString.replace(/\s/g, "");
-      console.log(inputString);
       if (inputString == "") {
         return;
       }
@@ -313,6 +349,10 @@ export default {
   border: 1px solid #ccc;
   background-color: #f9f9f9;
   display: inline-block;
+}
+.ant-card-body {
+  overflow: auto;
+  max-height: 40vh;
 }
 h3 {
   margin: 40px 0 0;

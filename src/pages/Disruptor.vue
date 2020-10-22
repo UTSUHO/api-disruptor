@@ -24,19 +24,25 @@
                 </template>
               </a-input>
             </a-form-item>
-
-            <a-page-header title="Query params!">
-              <span>Expected Input: json or 'key1:value1,key2:value2'</span>
-            </a-page-header>
-            <a-divider />
-            <!-- 可视化组件 -->
-            <!-- <input-list @child-dr="parentDR"></input-list> -->
-            <a-form-item>
-              <a-input
-                v-model:value="inputParam"
-                @blur="formatInputParam"
-              ></a-input>
-            </a-form-item>
+            <div v-if="form.method === 'get' ? true : false">
+              <a-page-header title="Query params!">
+                <span class="expectedInput">Expected Input: </span>
+                <span
+                  ><code class="inputExample">json:{'a':b','c':'d'}</code> /
+                  <code class="inputExample">a:b,c:d</code> /
+                  <code class="inputExample">JS object:{a:b,c:d}</code></span
+                >
+              </a-page-header>
+              <a-divider />
+              <!-- 可视化组件 -->
+              <!-- <input-list @child-dr="parentDR"></input-list> -->
+              <a-form-item>
+                <a-input
+                  v-model:value="inputParam"
+                  @blur="formatInputParam"
+                ></a-input>
+              </a-form-item>
+            </div>
             <div v-if="form.method === 'get' ? false : true">
               <a-page-header title="Body"> </a-page-header>
               <a-divider />
@@ -45,6 +51,7 @@
                   v-model:value="inputData"
                   placeholder="body"
                   :rows="4"
+                  @blur="formatInputData"
                 />
               </a-form-item>
             </div>
@@ -209,40 +216,80 @@ export default {
     // },
     formatInputParam() {
       var strBuffer = "";
-      var objInput = {};
-      if (this.inputParam == "") {
-        return;
-      }
-      //   console.log(this.inputParam);
+      var objInput = this.formatInput(this.inputParam);
       //   add question mark
       if (this.form.url.includes("?")) {
         this.form.url = this.form.url.slice(0, this.form.url.indexOf("?") + 1);
       } else {
         this.form.url += "?";
       }
-      //	handler with json and "key1:value1,key2:value2"
-      if (this.isJson(this.inputParam)) {
-        objInput = JSON.parse(this.inputParam);
-      } else if (!this.inputParam.includes("{")) {
-        var KeyVal = this.inputParam.split(",");
-
-        var i;
-        for (i in KeyVal) {
-          KeyVal[i] = KeyVal[i].split(":");
-          objInput[KeyVal[i][0]] = KeyVal[i][1];
-        }
-      } else {
-        return;
-      }
-
-      //   universal json operation
-
       Object.keys(objInput).forEach(function (key) {
         strBuffer = strBuffer + key + "=" + objInput[key] + "&";
       });
 
       this.form.url += strBuffer;
       this.form.url = this.form.url.substring(0, this.form.url.length - 1);
+    },
+    formatInputData() {
+      this.form.data = this.formatInput(this.inputData);
+    },
+    formatInput(inputString) {
+      // @return js object or null
+      var objInput = {};
+      var items;
+      var bufferString = "";
+      console.log(inputString);
+
+      inputString = inputString.replace(/\s/g, "");
+      console.log(inputString);
+      if (inputString == "") {
+        return;
+      }
+      //   console.log(this.inputParam);
+
+      //	handler for json and different input format
+      if (this.isJson(inputString)) {
+        return (objInput = JSON.parse(inputString));
+        //	if it's a key:value structure
+      } else if (inputString.includes(":")) {
+        //	if it's key:value without curly braces
+        //	a:b,c:d
+        if (!inputString.includes("{")) {
+          items = inputString.split(",");
+          var i;
+          for (i in items) {
+            items[i] = items[i].split(":");
+            objInput[items[i][0]] = items[i][1];
+          }
+          return objInput;
+          //this one for js object direct input
+          // { a:b,c:d }
+        } else {
+          items = inputString.split(",");
+          for (var x = 0; x < items.length; x++) {
+            var current = items[x].split(":");
+            if (
+              current[0][0] === "{" &&
+              current[1][current[1].length - 1] === "}"
+            ) {
+              bufferString +=
+                "{" +
+                '"' +
+                current[0].substring(1, current[0].length) +
+                '":"' +
+                current[1].substring(0, current[1].length - 1) +
+                '"},';
+            } else {
+              bufferString += '"' + current[0] + '":"' + current[1] + '",';
+            }
+          }
+          return (objInput = JSON.parse(
+            (bufferString = bufferString.substr(0, bufferString.length - 1))
+          ));
+        }
+      } else {
+        return;
+      }
     },
     isJson(str) {
       try {
@@ -258,6 +305,15 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+.expectedInput {
+  display: block;
+}
+.inputExample {
+  border-radius: 3px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  display: inline-block;
+}
 h3 {
   margin: 40px 0 0;
 }

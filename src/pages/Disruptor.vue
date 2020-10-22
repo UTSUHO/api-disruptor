@@ -25,14 +25,29 @@
               </a-input>
             </a-form-item>
 
-            <a-page-header title="Query params!"></a-page-header>
+            <a-page-header title="Query params!">
+              <span>Expected Input: json or 'key1:value1,key2:value2'</span>
+            </a-page-header>
             <a-divider />
             <!-- 可视化组件 -->
             <!-- <input-list @child-dr="parentDR"></input-list> -->
             <a-form-item>
-              <a-input v-model:value="inputData" @blur="formatString"></a-input>
+              <a-input
+                v-model:value="inputParam"
+                @blur="formatInputParam"
+              ></a-input>
             </a-form-item>
-
+            <div v-if="form.method === 'get' ? false : true">
+              <a-page-header title="Body"> </a-page-header>
+              <a-divider />
+              <a-form-item>
+                <a-textarea
+                  v-model:value="inputData"
+                  placeholder="body"
+                  :rows="4"
+                />
+              </a-form-item>
+            </div>
             <!-- <a-page-header title="Headers"></a-page-header>
             <a-divider />
             <a-form-item>
@@ -41,7 +56,12 @@
             <a-divider />
 
             <a-form-item>
-              <a-button type="primary" shape="round" @click="disrupt">
+              <a-button
+                type="primary"
+                shape="round"
+                @click="disrupt"
+                :loading="loading"
+              >
                 Fetch！
               </a-button>
             </a-form-item>
@@ -86,8 +106,10 @@ export default {
   },
   data() {
     return {
+      inputParam: "",
       inputData: "",
       checkedData: [],
+      loading: false,
       showPage: false,
       layout: "horizontal",
       form: {
@@ -122,6 +144,7 @@ export default {
 
   methods: {
     async disrupt() {
+      this.loading = true;
       //pack axios request funtion
       console.log(1);
       this.$axios
@@ -134,20 +157,22 @@ export default {
             Accept: response.config.headers["Accept"],
           };
           this.showPage = true;
+          this.loading = false;
           console.log(this.request_data);
           console.log(2);
         })
         .catch((err) => {
           console.log({ err });
           this.response_data = JSON.stringify(err.response.headers);
-          this.request_data = JSON.stringify({
+          this.request_data = {
             Method: err.response.config.method,
             URL: err.request.responseURL,
             "Content-type": err.response.headers["content-type"],
-          });
+          };
           console.log(err.response);
           console.log(this.request_data);
           this.showPage = true;
+          this.loading = false;
           console.log(3);
         });
       console.log(4);
@@ -182,26 +207,50 @@ export default {
     //   }
     //   this.form.url += strBuffer;
     // },
-    formatString() {
+    formatInputParam() {
       var strBuffer = "";
-      //   console.log(this.inputData);
+      var objInput = {};
+      if (this.inputParam == "") {
+        return;
+      }
+      //   console.log(this.inputParam);
+      //   add question mark
       if (this.form.url.includes("?")) {
         this.form.url = this.form.url.slice(0, this.form.url.indexOf("?") + 1);
       } else {
         this.form.url += "?";
       }
-      if (this.inputData == "") {
+      //	handler with json and "key1:value1,key2:value2"
+      if (this.isJson(this.inputParam)) {
+        objInput = JSON.parse(this.inputParam);
+      } else if (!this.inputParam.includes("{")) {
+        var KeyVal = this.inputParam.split(",");
+
+        var i;
+        for (i in KeyVal) {
+          KeyVal[i] = KeyVal[i].split(":");
+          objInput[KeyVal[i][0]] = KeyVal[i][1];
+        }
+      } else {
         return;
       }
-      const objInput = JSON.parse(this.inputData);
-      //   console.log(objInput);
+
+      //   universal json operation
 
       Object.keys(objInput).forEach(function (key) {
         strBuffer = strBuffer + key + "=" + objInput[key] + "&";
       });
 
       this.form.url += strBuffer;
-      this.form.url=this.form.url.substring(0, this.form.url.length - 1);
+      this.form.url = this.form.url.substring(0, this.form.url.length - 1);
+    },
+    isJson(str) {
+      try {
+        JSON.parse(str);
+      } catch (e) {
+        return false;
+      }
+      return true;
     },
   },
 };

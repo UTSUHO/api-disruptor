@@ -1,9 +1,9 @@
 <template>
-  <a-layout-header style="height:82px;">
+  <a-layout-header style="height:8vh;">
     <a-page-header
       title="API Disruptor"
       @back="() => null"
-      style="padding: 1em 0 0;"
+      style="padding: 1em 0 0;height:2vh;"
     >
       <template v-slot:backIcon>
         <img src="../../public/disruptor32.png" />

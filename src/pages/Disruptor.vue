@@ -8,11 +8,12 @@
         <a-row type="flex" justify="center" align="middle">
           <a-col :span="18">
             <a-form-item>
-              <a-input
+              <a-input-search
                 v-model:value="form.url"
                 placeholder="?query string"
                 size="large"
                 style="margin: 2em 0 1em"
+                @search="disrupt"
               >
                 <template v-slot:addonBefore>
                   <a-select v-model:value="form.method" style="width: 90px">
@@ -22,56 +23,48 @@
                     <a-select-option value="delete"> DELETE </a-select-option>
                   </a-select>
                 </template>
-              </a-input>
+                <template v-slot:enterButton>
+                  <a-button type="primary" :loading="loading">
+                    Fetch！
+                  </a-button>
+                </template>
+              </a-input-search>
             </a-form-item>
+            <h1>
+              Query params:
+              <!-- Input Example Code Style -->
+              <!-- <span class="expectedInput">Expected Input: </span>
+                  <span
+                    ><code class="inputExample">json:{'a':b','c':'d'}</code> /
+                    <code class="inputExample">a:b,c:d</code> /
+                    <code class="inputExample">JS object:{a:b,c:d}</code></span
+                  > -->
+            </h1>
+            <a-divider />
+            <!-- 可视化组件事件入口 -->
+            <!-- <input-list @child-dr="parentDR"></input-list> -->
             <div v-if="form.method === 'get' ? true : false">
-              <a-page-header title="Query params!">
-                <span class="expectedInput">Expected Input: </span>
-                <span
-                  ><code class="inputExample">json:{'a':b','c':'d'}</code> /
-                  <code class="inputExample">a:b,c:d</code> /
-                  <code class="inputExample">JS object:{a:b,c:d}</code></span
-                >
-              </a-page-header>
-              <a-divider />
-              <!-- 可视化组件 -->
-              <!-- <input-list @child-dr="parentDR"></input-list> -->
-              <a-form-item>
-                <a-input
-                  v-model:value="inputParam"
-                  @blur="formatInputParam"
-                ></a-input>
-              </a-form-item>
-            </div>
-            <div v-if="form.method === 'get' ? false : true">
-              <a-page-header title="Body"> </a-page-header>
-              <a-divider />
               <a-form-item>
                 <a-textarea
-                  v-model:value="inputData"
-                  placeholder="body"
+                  v-model:value="inputParam"
                   :rows="4"
-                  @blur="formatInputData"
+                  @blur="formatInputParam"
+                  placeholder="Expected Input:	json:{'a':b','c':'d'}	/	a:b,c:d	/	JS object:{a:b,c:d}"
                 />
               </a-form-item>
             </div>
-            <!-- <a-page-header title="Headers"></a-page-header>
-            <a-divider />
-            <a-form-item>
-              <a-input> </a-input>
-            </a-form-item> -->
-            <a-divider />
+            <div v-if="form.method === 'get' ? false : true">
+              <a-form-item>
+                <a-textarea
+                  v-model:value="inputData"
+                  :rows="4"
+                  @blur="formatInputData"
+                  placeholder="Expected Input:	json:{'a':b','c':'d'}	/	a:b,c:d	/	JS object:{a:b,c:d}"
+                />
+              </a-form-item>
+            </div>
 
-            <a-form-item>
-              <a-button
-                type="primary"
-                shape="round"
-                @click="disrupt"
-                :loading="loading"
-              >
-                Fetch！
-              </a-button>
-            </a-form-item>
+            <a-divider />
           </a-col>
         </a-row>
       </a-form>
@@ -82,12 +75,15 @@
     <a-col :span="20">
       <a-card
         title="Response"
-        bodyStyle="overflow:auto;height:40vh"
-        v-if="cardName === 'Response' ? true : false"
+        bodyStyle="overflow:auto;max-height:40vh"
+        v-if="cardName === 'Response' ? false : true"
       >
         <template v-slot:extra>
-          <a-button type="primary" shape="circle" @click="changeCard">
-            <template v-slot:icon><SyncOutlined /></template>
+          <a-button type="primary" @click="changeCard">
+            change to {{ cardName }}
+          </a-button>
+          <a-button type="primary" ghost="true" @click="copyResponseData">
+            <template v-slot:icon> <CopyFilled /></template>
           </a-button>
         </template>
         <div v-if="showPage" style="overflow: auto">
@@ -95,15 +91,13 @@
         </div>
       </a-card>
 
-      <a-card title="Request" v-if="cardName === 'Request' ? true : false">
+      <a-card title="Request  " v-if="cardName === 'Request' ? false : true">
         <template v-slot:extra>
-          <a-button
-            type="primary"
-            shape="circle"
-            ghost="true"
-            @click="changeCard"
-          >
-            <template v-slot:icon><SyncOutlined /></template>
+          <a-button type="primary" @click="changeCard">
+            change to {{ cardName }}
+          </a-button>
+          <a-button type="primary" ghost="true" @click="copyRequestData">
+            <template v-slot:icon> <CopyFilled /></template>
           </a-button>
         </template>
         <div v-if="showPage">
@@ -121,18 +115,20 @@
 <script>
 //可视化组件
 // import inputList from "../components/inputList.vue";
-import { SyncOutlined } from "@ant-design/icons-vue";
+import { CopyFilled } from "@ant-design/icons-vue";
 
 export default {
   name: "Disruptor",
   components: {
-    SyncOutlined,
+	CopyFilled,
+
     //   可视化组件
     // inputList,
   },
   data() {
     return {
-      cardName: "Response",
+      message: "copy the text",
+      cardName: "Request",
       inputParam: "",
       inputData: "",
       checkedData: [],
@@ -149,35 +145,14 @@ export default {
       request_data: "",
     };
   },
-  computed: {
-    // url() {
-    //   var url = "";
-    //   var strBuffer = "";
-    //   if (this.checkedData.length == 0) {
-    //     return url;
-    //   } else {
-    //     for (let i = 0; i < this.checkedData.length; ++i) {
-    //       if (!this.checkedData[i].checked) {
-    //         strBuffer =
-    //           this.checkedData[i].key + "=" + this.checkedData[i].value;
-    //       }
-    //     }
-    //   }
-    //   url = url + "?" + strBuffer;
-    //   console.log(this.checkedData);
-    //   return url;
-    // },
-  },
-
   methods: {
+    //pack axios request funtion
     async disrupt() {
       this.loading = true;
-      //pack axios request funtion
-      console.log(1);
       this.$axios
         .request(this.form)
         .then((response) => {
-          this.response_data = JSON.stringify(response.data);
+          this.response_data = JSON.stringify(response.data,null,4);
           this.request_data = {
             Method: response.config.method,
             URL: response.config.url,
@@ -192,24 +167,19 @@ export default {
           };
           this.showPage = true;
           this.loading = false;
-          console.log(this.request_data);
-          console.log(2);
+
         })
         .catch((err) => {
-          console.log({ err });
           this.response_data = JSON.stringify(err.response.headers);
           this.request_data = {
             Method: err.response.config.method,
             URL: err.request.responseURL,
             "Content-type": err.response.headers["content-type"],
           };
-          console.log(err.response);
-          console.log(this.request_data);
+
           this.showPage = true;
           this.loading = false;
-          console.log(3);
         });
-      console.log(4);
     },
     // 可视化组件配套函数
     // parentDR(childData) {
@@ -247,6 +217,36 @@ export default {
       } else {
         this.cardName = "Response";
       }
+    },
+    copyResponseData() {
+      let transfer = document.createElement("input");
+      document.body.appendChild(transfer);
+      transfer.value = this.response_data; // copy target
+      transfer.focus();
+      transfer.select();
+      if (document.execCommand("copy")) {
+        document.execCommand("copy");
+        alert("copy success");
+      } else {
+        alert("copy failed");
+      }
+      transfer.blur();
+      document.body.removeChild(transfer);
+    },
+    copyRequestData() {
+      let transfer = document.createElement("input");
+      document.body.appendChild(transfer);
+      transfer.value = JSON.stringify(this.request_data); // copy target
+      transfer.focus();
+      transfer.select();
+      if (document.execCommand("copy")) {
+        document.execCommand("copy");
+        alert("copied success");
+      } else {
+        alert("copied failed");
+      }
+      transfer.blur();
+      document.body.removeChild(transfer);
     },
     formatInputParam() {
       var strBuffer = "";
@@ -301,17 +301,34 @@ export default {
           //this one for js object direct input
           // { a:b,c:d }
         } else {
+          inputString = inputString.replace(/'/g, "");
+          inputString = inputString.replace(/"/g, "");
           items = inputString.split(",");
           for (var x = 0; x < items.length; x++) {
             var current = items[x].split(":");
-            if (
-              current[0][0] === "{" &&
-              current[1][current[1].length - 1] === "}"
-            ) {
+
+            if (current[0][0] === "{") {
               bufferString +=
                 "{" +
                 '"' +
                 current[0].substring(1, current[0].length) +
+                '":"' +
+                current[1] +
+                '",';
+              // dealing with nesting
+            } else if (typeof current[2] !== "undefined") {
+              bufferString +=
+                '"' +
+                current[0] +
+                '":{"' +
+                current[1].substring(1, current[1].length) +
+                '":"' +
+                current[2].substring(0, 1) +
+                '"}},';
+            } else if (current[1][current[1].length - 1] === "}") {
+              bufferString +=
+                '"' +
+                current[0] +
                 '":"' +
                 current[1].substring(0, current[1].length - 1) +
                 '"},';
@@ -319,9 +336,8 @@ export default {
               bufferString += '"' + current[0] + '":"' + current[1] + '",';
             }
           }
-          return (objInput = JSON.parse(
-            (bufferString = bufferString.substr(0, bufferString.length - 1))
-          ));
+          bufferString = bufferString.substr(0, bufferString.length - 1);
+          return (objInput = JSON.parse(bufferString));
         }
       } else {
         return;
@@ -354,8 +370,8 @@ export default {
   overflow: auto;
   max-height: 40vh;
 }
-h3 {
-  margin: 40px 0 0;
+h1 {
+  text-align: left;
 }
 
 pre {

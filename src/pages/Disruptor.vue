@@ -73,28 +73,25 @@
 
   <a-row type="flex" justify="center" align="top">
     <a-col :span="20">
-      <a-card
-        title="Response"
-        bodyStyle="overflow:auto;max-height:40vh"
-        v-if="cardName === 'Response' ? false : true"
-      >
+      <a-card bodyStyle="overflow:auto;max-height:40vh"
+        ><template v-slot:title> Card:{{ cardName }} </template>
         <template v-slot:extra>
           <a-button type="primary" @click="changeCard">
-            change to {{ cardName }}
+            change to {{ targetCard }}
           </a-button>
-          <a-button type="primary" ghost="true" @click="copyResponseData">
+          <a-button type="primary" ghost="true" @click="copyData">
             <template v-slot:icon> <CopyFilled /></template>
           </a-button>
         </template>
-        <div v-if="showPage" style="overflow: auto">
-          <pre>{{ response_data }}</pre>
+        <div style="overflow: auto">
+          <pre>{{ dataShowcase }}</pre>
         </div>
       </a-card>
 
-      <a-card title="Request  " v-if="cardName === 'Request' ? false : true">
+      <!-- <a-card title="Request  " v-if="cardName === 'Request' ? true : false">
         <template v-slot:extra>
           <a-button type="primary" @click="changeCard">
-            change to {{ cardName }}
+            change to {{ targetCard }}
           </a-button>
           <a-button type="primary" ghost="true" @click="copyRequestData">
             <template v-slot:icon> <CopyFilled /></template>
@@ -107,7 +104,7 @@
             </li>
           </ul>
         </div>
-      </a-card>
+      </a-card> -->
     </a-col>
   </a-row>
 </template>
@@ -120,7 +117,7 @@ import { CopyFilled } from "@ant-design/icons-vue";
 export default {
   name: "Disruptor",
   components: {
-	CopyFilled,
+    CopyFilled,
 
     //   可视化组件
     // inputList,
@@ -128,12 +125,13 @@ export default {
   data() {
     return {
       message: "copy the text",
-      cardName: "Request",
+      cardName: "Response",
+      targetCard: "Request",
       inputParam: "",
       inputData: "",
       checkedData: [],
       loading: false,
-      showPage: false,
+      // showPage: false,
       layout: "horizontal",
       form: {
         url: "https://jsonplaceholder.typicode.com/comments",
@@ -143,6 +141,7 @@ export default {
 
       response_data: "",
       request_data: "",
+      dataShowcase: "",
     };
   },
   methods: {
@@ -152,7 +151,7 @@ export default {
       this.$axios
         .request(this.form)
         .then((response) => {
-          this.response_data = JSON.stringify(response.data,null,4);
+          this.response_data = JSON.stringify(response.data, null, 4);
           this.request_data = {
             Method: response.config.method,
             URL: response.config.url,
@@ -165,9 +164,13 @@ export default {
             xsrfCookieName: response.config.xsrfCookieName,
             xsrfHeaderName: response.config.xsrfHeaderName,
           };
-          this.showPage = true;
+          // this.showPage = true;
+          if (this.cardName === "Response") {
+            this.dataShowcase = this.response_data;
+          } else {
+            this.dataShowcase = this.request_data;
+          }
           this.loading = false;
-
         })
         .catch((err) => {
           this.response_data = JSON.stringify(err.response.headers);
@@ -177,7 +180,7 @@ export default {
             "Content-type": err.response.headers["content-type"],
           };
 
-          this.showPage = true;
+          // this.showPage = true;
           this.loading = false;
         });
     },
@@ -213,15 +216,28 @@ export default {
     // },
     changeCard() {
       if (this.cardName === "Response") {
+        this.dataShowcase = this.request_data;
         this.cardName = "Request";
+        this.targetCard = "Response";
       } else {
+        this.dataShowcase = this.response_data;
         this.cardName = "Response";
+        this.targetCard = "Request";
       }
     },
-    copyResponseData() {
+    copyData() {
+      let bufferData = "";
+      if (this.dataShowcase === "") {
+        alert("there is nothing to copy");
+        return;
+      } else if (this.cardName === "Request") {
+        bufferData = JSON.stringify(this.dataShowcase);
+      } else {
+        bufferData = this.dataShowcase;
+      }
       let transfer = document.createElement("input");
       document.body.appendChild(transfer);
-      transfer.value = this.response_data; // copy target
+      transfer.value = bufferData; // copy target
       transfer.focus();
       transfer.select();
       if (document.execCommand("copy")) {
@@ -233,21 +249,7 @@ export default {
       transfer.blur();
       document.body.removeChild(transfer);
     },
-    copyRequestData() {
-      let transfer = document.createElement("input");
-      document.body.appendChild(transfer);
-      transfer.value = JSON.stringify(this.request_data); // copy target
-      transfer.focus();
-      transfer.select();
-      if (document.execCommand("copy")) {
-        document.execCommand("copy");
-        alert("copied success");
-      } else {
-        alert("copied failed");
-      }
-      transfer.blur();
-      document.body.removeChild(transfer);
-    },
+
     formatInputParam() {
       var strBuffer = "";
       if (this.formatInput(this.inputParam) === undefined) {

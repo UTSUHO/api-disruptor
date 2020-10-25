@@ -43,27 +43,16 @@
             <a-divider />
             <!-- 可视化组件事件入口 -->
             <!-- <input-list @child-dr="parentDR"></input-list> -->
-            <div v-if="form.method === 'get' ? true : false">
+            <div>
               <a-form-item>
                 <a-textarea
                   v-model:value="inputParam"
                   :rows="4"
-                  @blur="formatInputParam"
+                  @blur="dynamicStringMapping"
                   placeholder="Expected Input:	json:{'a':b','c':'d'}	/	a:b,c:d	/	JS object:{a:b,c:d}"
                 />
               </a-form-item>
             </div>
-            <div v-if="form.method === 'get' ? false : true">
-              <a-form-item>
-                <a-textarea
-                  v-model:value="inputData"
-                  :rows="4"
-                  @blur="formatInputData"
-                  placeholder="Expected Input:	json:{'a':b','c':'d'}	/	a:b,c:d	/	JS object:{a:b,c:d}"
-                />
-              </a-form-item>
-            </div>
-
             <a-divider />
           </a-col>
         </a-row>
@@ -87,24 +76,6 @@
           <pre>{{ dataShowcase }}</pre>
         </div>
       </a-card>
-
-      <!-- <a-card title="Request  " v-if="cardName === 'Request' ? true : false">
-        <template v-slot:extra>
-          <a-button type="primary" @click="changeCard">
-            change to {{ targetCard }}
-          </a-button>
-          <a-button type="primary" ghost="true" @click="copyRequestData">
-            <template v-slot:icon> <CopyFilled /></template>
-          </a-button>
-        </template>
-        <div v-if="showPage">
-          <ul>
-            <li v-for="(value, name) in request_data" :key="value">
-              {{ name }}:{{ value }}
-            </li>
-          </ul>
-        </div>
-      </a-card> -->
     </a-col>
   </a-row>
 </template>
@@ -128,10 +99,8 @@ export default {
       cardName: "Response",
       targetCard: "Request",
       inputParam: "",
-      inputData: "",
       checkedData: [],
       loading: false,
-      // showPage: false,
       layout: "horizontal",
       form: {
         url: "https://jsonplaceholder.typicode.com/comments",
@@ -249,7 +218,7 @@ export default {
       transfer.blur();
       document.body.removeChild(transfer);
     },
-
+    // get mapping handler
     formatInputParam() {
       var strBuffer = "";
       if (this.formatInput(this.inputParam) === undefined) {
@@ -269,13 +238,25 @@ export default {
       this.form.url += strBuffer;
       this.form.url = this.form.url.substring(0, this.form.url.length - 1);
     },
+    // post/put/delete/patch handler
     formatInputData() {
-      if (this.formatInput(this.inputData) != undefined) {
-        this.form.data = this.formatInput(this.inputData);
+      if (this.formatInput(this.inputParam) != undefined) {
+        this.form.data = this.formatInput(this.inputParam);
+      }
+    },
+    dynamicStringMapping() {
+      console.log("happened");
+      if (this.form.method === "get") {
+        this.formatInputParam();
+        if (this.form.url.includes("[object Object]")) {
+          alert("js object mapping won't be supported for get function");
+        }
+      } else {
+        this.formatInputData();
       }
     },
     formatInput(inputString) {
-      // @return js object or null
+      // @return js object or undefined
       var objInput = {};
       var items;
       var bufferString = "";
@@ -306,10 +287,24 @@ export default {
           inputString = inputString.replace(/'/g, "");
           inputString = inputString.replace(/"/g, "");
           items = inputString.split(",");
+          console.log(items);
           for (var x = 0; x < items.length; x++) {
             var current = items[x].split(":");
-
-            if (current[0][0] === "{") {
+            console.log(current);
+            console.log(current[1][current[1].length - 1]);
+            if (
+              current[0][0] === "{" &&
+              current[1][current[1].length - 1] === "}"
+            ) {
+              bufferString +=
+                "{" +
+                '"' +
+                current[0].substring(1, current[0].length) +
+                '":"' +
+                current[1].substring(0, current[1].length - 1) +
+                '"},';
+              // dealing with nesting
+            } else if (current[0][0] === "{") {
               bufferString +=
                 "{" +
                 '"' +
@@ -317,16 +312,6 @@ export default {
                 '":"' +
                 current[1] +
                 '",';
-              // dealing with nesting
-            } else if (typeof current[2] !== "undefined") {
-              bufferString +=
-                '"' +
-                current[0] +
-                '":{"' +
-                current[1].substring(1, current[1].length) +
-                '":"' +
-                current[2].substring(0, 1) +
-                '"}},';
             } else if (current[1][current[1].length - 1] === "}") {
               bufferString +=
                 '"' +
@@ -334,11 +319,32 @@ export default {
                 '":"' +
                 current[1].substring(0, current[1].length - 1) +
                 '"},';
+            } else if (typeof current[2] !== "undefined") {
+              if (current[2].includes("}}")) {
+                bufferString +=
+                  '"' +
+                  current[0] +
+                  '":{"' +
+                  current[1].substring(1, current[1].length) +
+                  '":"' +
+                  current[2].substring(0, 1) +
+                  '"}},';
+              } else {
+                bufferString +=
+                  '"' +
+                  current[0] +
+                  '":{"' +
+                  current[1].substring(1, current[1].length) +
+                  '":"' +
+                  current[2].substring(0, 1) +
+                  '"},';
+              }
             } else {
               bufferString += '"' + current[0] + '":"' + current[1] + '",';
             }
           }
           bufferString = bufferString.substr(0, bufferString.length - 1);
+          console.log(bufferString);
           return (objInput = JSON.parse(bufferString));
         }
       } else {
